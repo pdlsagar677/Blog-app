@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export interface UserData {
   id: string;
@@ -31,12 +31,25 @@ export const useAuthStore = create<AuthState>()(
       setToken: (token) => set({ token }),
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),
-      logout: () => set({ user: null, token: null }),
+      logout: () => {
+        // Clear everything on logout
+        localStorage.removeItem("sessionToken");
+        set({ user: null, token: null });
+      },
     }),
     {
       name: "auth-storage",
-      // Only use localStorage in the browser
-      getStorage: () => (typeof window !== "undefined" ? localStorage : undefined),
+      storage: createJSONStorage(() => {
+        if (typeof window !== "undefined") {
+          return localStorage;
+        }
+        // Return a dummy storage for SSR
+        return {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {},
+        };
+      }),
     }
   )
 );
