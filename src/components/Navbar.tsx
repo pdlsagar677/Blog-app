@@ -17,7 +17,7 @@ export default function Navbar() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const navigation = [
-    { name: "My Blogs", href: "/blogs", current: pathname === "/blogs" },
+    { name: " Blogs", href: "/blogs", current: pathname === "/blogs" },
     { name: "Add Blog", href: "/add-blog", current: pathname === "/add-blog" },
   ];
 
@@ -136,16 +136,7 @@ export default function Navbar() {
                         <p className="font-medium text-gray-900 dark:text-white">{user.username}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                       </div>
-                      <Link
-                        href="/profile"
-                        className="flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => setIsProfileOpen(false)}
-                      >
-                        <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        Profile Settings
-                      </Link>
+                     
                       <button
                         onClick={() => {
                           setIsProfileOpen(false);

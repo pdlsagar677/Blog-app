@@ -1,3 +1,4 @@
+// hooks/useAuth.ts
 import { useEffect, useState } from "react";
 import { useAuthStore, UserData } from "../lib/store/useAuthStore";
 
@@ -15,10 +16,25 @@ export const useAuth = () => {
   // Fetch user from token on mount
   useEffect(() => {
     const initializeAuth = async () => {
-      // If we have a token but no user, fetch the user
+      console.log("Initializing auth...");
+      console.log("Zustand token:", token);
+      console.log("LocalStorage token:", localStorage.getItem("sessionToken"));
+      
+      // If we have a token in Zustand but no user, fetch the user
       if (token && !user) {
+        console.log("Token exists but no user, fetching user...");
         await fetchUser(token);
+      } 
+      // If no token in Zustand but we have one in localStorage (from another browser)
+      else if (!token) {
+        const storedToken = localStorage.getItem("sessionToken");
+        if (storedToken) {
+          console.log("Found token in localStorage, setting in Zustand...");
+          setToken(storedToken);
+          await fetchUser(storedToken);
+        }
       }
+      
       setInitializing(false);
     };
 
@@ -29,21 +45,42 @@ export const useAuth = () => {
   const fetchUser = async (authToken: string) => {
     try {
       setLoading(true);
+      console.log("Fetching user with token:", authToken);
+      
       const res = await fetch("/api/auth/me", {
-        headers: { Authorization: `Bearer ${authToken}` },
+        headers: { 
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json"
+        },
       });
+      
       const data: AuthResponse = await res.json();
+      console.log("User fetch response:", data);
+      
       setLoading(false);
 
       if (data.success && data.user) {
         setUser(data.user);
+        // Make sure token is also stored in localStorage for API calls
+        localStorage.setItem("sessionToken", authToken);
       } else {
-        storeLogout();
+        console.log("User fetch failed, logging out");
+        logout();
       }
-    } catch {
+    } catch (error) {
+      console.error("Error fetching user:", error);
       setLoading(false);
-      storeLogout();
+      logout();
     }
+  };
+
+  // Helper to sync token to localStorage
+  const syncTokenToStorage = (token: string) => {
+    // Store in Zustand
+    setToken(token);
+    // Store in localStorage for API calls
+    localStorage.setItem("sessionToken", token);
+    console.log("Token synced to localStorage:", token);
   };
 
   // Signup
@@ -67,14 +104,16 @@ export const useAuth = () => {
       setLoading(false);
 
       if (data.success && data.token) {
-        setToken(data.token);
+        // Sync token to both Zustand and localStorage
+        syncTokenToStorage(data.token);
         await fetchUser(data.token);
       } else if (!data.success) {
         setError(data.error || "Signup failed");
       }
 
       return data;
-    } catch {
+    } catch (error) {
+      console.error("Signup error:", error);
       setLoading(false);
       setError("Network error");
       return { success: false, error: "Network error" };
@@ -97,14 +136,16 @@ export const useAuth = () => {
       setLoading(false);
 
       if (data.success && data.token) {
-        setToken(data.token);
+        // Sync token to both Zustand and localStorage
+        syncTokenToStorage(data.token);
         await fetchUser(data.token);
       } else if (!data.success) {
         setError(data.error || "Login failed");
       }
 
       return data;
-    } catch {
+    } catch (error) {
+      console.error("Login error:", error);
       setLoading(false);
       setError("Network error");
       return { success: false, error: "Network error" };
@@ -113,11 +154,15 @@ export const useAuth = () => {
 
   // Logout
   const logout = () => {
+    console.log("Logging out...");
+    // Clear everything
+    localStorage.removeItem("sessionToken");
     storeLogout();
   };
 
   return { 
     user, 
+    token, // Export token so components can use it
     loading: loading || initializing, 
     error, 
     signup, 

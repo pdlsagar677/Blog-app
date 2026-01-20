@@ -47,7 +47,7 @@ export default function AddPostPage() {
     }
 
     const words = content.trim().split(/\s+/).filter(word => word.length > 0);
-    if (words.length < 100) {
+    if (words.length < 10) {
       setMessage(`Content must be at least 100 words. Currently: ${words.length} words`);
       return;
     }

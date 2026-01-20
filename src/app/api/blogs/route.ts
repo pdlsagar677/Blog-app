@@ -4,7 +4,6 @@ import { Blog } from "@/lib/store/useBlogStore";
 
 export async function GET(req: NextRequest) {
   try {
-    // Get token from headers
     const token = req.headers.get("authorization")?.split(" ")[1];
     if (!token) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
@@ -18,10 +17,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
     }
 
-    // Fetch blogs for logged-in user
+    // Fetch all blogs, newest first
     const blogs: Blog[] = await db
       .collection<Blog>("blogs")
-      .find({ authorId: session.userId })
+      .find({}) // <-- remove authorId filter
       .sort({ createdAt: -1 })
       .toArray();
 

@@ -34,8 +34,9 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null, token: null }),
     }),
     {
-      name: "auth-storage",      
-      getStorage: () => localStorage, 
+      name: "auth-storage",
+      // Only use localStorage in the browser
+      getStorage: () => (typeof window !== "undefined" ? localStorage : undefined),
     }
   )
 );
