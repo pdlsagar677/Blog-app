@@ -20,7 +20,7 @@ export const useAuth = () => {
   const fetchUser = async (token: string) => {
     try {
       setLoading(true);
-      const res = await fetch("/api/me", {
+      const res = await fetch("/api/auth/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data: AuthResponse = await res.json();

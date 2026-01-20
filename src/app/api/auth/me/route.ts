@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { User, Session } from "@/models/User-model";
+import { Session, User } from "@/models/User-model";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     // Find session
     const session = await db.collection<Session>("sessions").findOne({ token });
     if (!session) {
-      return NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Session not found" }, { status: 404 });
     }
 
     // Find user
@@ -24,7 +24,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     }
 
-    // Return user data
     const userData = {
       id: user.id,
       username: user.username,
@@ -34,7 +33,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, user: userData }, { status: 200 });
   } catch (err) {
-    console.error("GET /api/me error:", err);
+    console.error("Get me error:", err);
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
