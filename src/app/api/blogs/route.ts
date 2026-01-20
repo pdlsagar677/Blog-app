@@ -2,44 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Blog } from "@/lib/store/useBlogStore";
 
-const generateId = () => {
-  return (
-    Date.now().toString(36) + Math.random().toString(36).substring(2, 8)
-  );
-};
-
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { title, content, authorId } = await req.json();
-
-    if (!title || !content || !authorId) {
-      return NextResponse.json(
-        { success: false, error: "All fields are required" },
-        { status: 400 }
-      );
+    // Get token from headers
+    const token = req.headers.get("authorization")?.split(" ")[1];
+    if (!token) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const { db } = await connectDB();
 
-    const newBlog: Blog = {
-      id: generateId(),
-      title,
-      content,
-      authorId,
-      createdAt: new Date().toISOString(),
-    };
+    // Validate session
+    const session = await db.collection("sessions").findOne({ token });
+    if (!session) {
+      return NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
+    }
 
-    await db.collection<Blog>("blogs").insertOne(newBlog);
+    // Fetch blogs for logged-in user
+    const blogs: Blog[] = await db
+      .collection<Blog>("blogs")
+      .find({ authorId: session.userId })
+      .sort({ createdAt: -1 })
+      .toArray();
 
-    return NextResponse.json(
-      { success: true, blog: newBlog },
-      { status: 200 }
-    );
+    return NextResponse.json({ success: true, blogs }, { status: 200 });
   } catch (err) {
-    console.error("Add blog error:", err);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    console.error("Fetch blogs error:", err);
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }

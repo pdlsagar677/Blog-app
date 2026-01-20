@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore, UserData } from "../lib/store/useAuthStore";
 
 interface AuthResponse {
@@ -9,19 +9,28 @@ interface AuthResponse {
 }
 
 export const useAuth = () => {
-  const { user, loading, error, setUser, setLoading, setError } = useAuthStore();
+  const { user, token, loading, error, setUser, setToken, setLoading, setError, logout: storeLogout } = useAuthStore();
+  const [initializing, setInitializing] = useState(true);
 
-  // Load user from session on mount
+  // Fetch user from token on mount
   useEffect(() => {
-    const token = localStorage.getItem("sessionToken");
-    if (token) fetchUser(token);
+    const initializeAuth = async () => {
+      // If we have a token but no user, fetch the user
+      if (token && !user) {
+        await fetchUser(token);
+      }
+      setInitializing(false);
+    };
+
+    initializeAuth();
   }, []);
 
-  const fetchUser = async (token: string) => {
+  // Fetch user info by token
+  const fetchUser = async (authToken: string) => {
     try {
       setLoading(true);
       const res = await fetch("/api/auth/me", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${authToken}` },
       });
       const data: AuthResponse = await res.json();
       setLoading(false);
@@ -29,13 +38,11 @@ export const useAuth = () => {
       if (data.success && data.user) {
         setUser(data.user);
       } else {
-        localStorage.removeItem("sessionToken");
-        setUser(null);
+        storeLogout();
       }
     } catch {
       setLoading(false);
-      localStorage.removeItem("sessionToken");
-      setUser(null);
+      storeLogout();
     }
   };
 
@@ -55,12 +62,13 @@ export const useAuth = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
       });
+
       const data: AuthResponse = await res.json();
       setLoading(false);
 
       if (data.success && data.token) {
-        localStorage.setItem("sessionToken", data.token);
-        fetchUser(data.token);
+        setToken(data.token);
+        await fetchUser(data.token);
       } else if (!data.success) {
         setError(data.error || "Signup failed");
       }
@@ -84,12 +92,13 @@ export const useAuth = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
+
       const data: AuthResponse = await res.json();
       setLoading(false);
 
       if (data.success && data.token) {
-        localStorage.setItem("sessionToken", data.token);
-        fetchUser(data.token);
+        setToken(data.token);
+        await fetchUser(data.token);
       } else if (!data.success) {
         setError(data.error || "Login failed");
       }
@@ -104,9 +113,15 @@ export const useAuth = () => {
 
   // Logout
   const logout = () => {
-    localStorage.removeItem("sessionToken");
-    setUser(null);
+    storeLogout();
   };
 
-  return { user, loading, error, signup, login, logout };
+  return { 
+    user, 
+    loading: loading || initializing, 
+    error, 
+    signup, 
+    login, 
+    logout 
+  };
 };

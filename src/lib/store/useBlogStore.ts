@@ -26,7 +26,7 @@ export const useBlogStore = create<BlogState>((set, get) => ({
   addBlog: async (blog) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch("/api/blogs", {
+      const res = await fetch("/api/add-blogs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(blog),
